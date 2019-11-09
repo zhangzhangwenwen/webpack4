@@ -1,4 +1,6 @@
 const path = require('path')
+const webpack = require('webpack')
+
 
 const CleanWebpackPlugin = require('clean-webpack-plugin') // 清楚html插件
 const HtmlWebpackPlugin = require('html-webpack-plugin') // 生成html-webpack插件
@@ -14,10 +16,38 @@ module.exports = {
     main: './src/index.js'
   },
   output: {
-    publicPath: './', // js 引用的路径或者 CDN 地址
+    publicPath: '/', // js 引用的路径或者 CDN 地址
     path: path.resolve(__dirname, 'dist'), // 打包文件的输出目录
     filename: '[name].bundle.js', // 代码打包后的文件名
     chunkFilename: '[name].js' // 代码拆分后的文件名
+  },
+  resolve: {
+    alias: {
+      jQuery: path.resolve(__dirname, 'src/jquery.min.js')
+    }
+  },
+  mode: 'development', // 开发模式
+  devtool: 'source-map', // 开启调试
+  devServer: {
+    contentBase: path.join(__dirname, 'dist'),
+    port: 8000, // 本地服务器端口号
+    hot: true, // 热重载
+    overlay: true, // 如果代码出错，会在浏览器页面弹出“浮动层”。类似于 vue-cli 等脚手架
+    proxy: {
+      // // 跨域代理转发
+      // '/comments': {
+      //   target: 'https://m.weibo.cn',
+      //   changeOrigin: true,
+      //   logLevel: 'debug',
+      //   headers: {
+      //     Cookie: ''
+      //   }
+      // }
+    },
+    historyApiFallback: {
+      // HTML5 history模式
+      rewrites: [{ from: /.*/, to: '/index.html' }]
+    }
   },
   module: {
     rules: [
@@ -77,28 +107,34 @@ module.exports = {
       title: '测试',
       minify: {
         removeComment: true,
-        // collapseWhitespace: true, // 删除空白符与换行符
+        collapseWhitespace: true, // 删除空白符与换行符
         minifyCSS: true // 压缩内联 css
       },
-      filename: 'index.html',
+      filename: 'index.html',  // filename的路径是在dev-build是相对于output.path的，而在webpack-dev-server中，则是相对于webpack-dev-server配置的publicPath。
       template: 'index.html'
     }),
     new MiniCssExtractPlugin({
       filename: '[name].css',
       chunkFilename: '[id].css'
     }),
-    new OptimizeCssAssetsPlugin({
-      assetNameRegExp: /\.css$/g,
-      cssProcessor: require('cssnano'), //用于优化\最小化 CSS 的 CSS 处理器，默认为 cssnano
-      cssProcessorOptions: { safe: true, discardComments: { removeAll: true } }, //传递给 cssProcessor 的选项，默认为{}
-      canPrint: true //布尔值，指示插件是否可以将消息打印到控制台，默认为 true
-    }),
-    new PurifyCSS({
-      paths: glob.sync([
-        // 要做 CSS Tree Shaking 的路径文件
-        path.resolve(__dirname, './*.html'), // 请注意，我们同样需要对 html 文件进行 tree shaking
-        path.resolve(__dirname, './src/*.js')
-      ])
+    // new OptimizeCssAssetsPlugin({
+    //   assetNameRegExp: /\.css$/g,
+    //   cssProcessor: require('cssnano'), //用于优化\最小化 CSS 的 CSS 处理器，默认为 cssnano
+    //   cssProcessorOptions: { safe: true, discardComments: { removeAll: true } }, //传递给 cssProcessor 的选项，默认为{}
+    //   canPrint: true //布尔值，指示插件是否可以将消息打印到控制台，默认为 true
+    // }),
+    // new PurifyCSS({
+    //   paths: glob.sync([
+    //     // 要做 CSS Tree Shaking 的路径文件
+    //     path.resolve(__dirname, './*.html'), // 请注意，我们同样需要对 html 文件进行 tree shaking
+    //     path.resolve(__dirname, './src/*.js')
+    //   ])
+    // }),
+    new webpack.HotModuleReplacementPlugin(), // 热部署模块
+    new webpack.NamedModulesPlugin(),
+    new webpack.ProvidePlugin({
+      $: 'jquery', // npm
+      jQuery: 'jQuery' // 本地Js文件
     })
   ],
 }
